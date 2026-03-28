@@ -1,0 +1,75 @@
+'use client'
+
+import React from 'react'
+import { 
+  LayoutDashboard,
+  Settings,
+  Users,
+  User,
+  Shield,
+  Lock,
+  Monitor,
+  FileText,
+  File,
+  Table,
+  Database,
+  BarChart,
+  Menu,
+  Home,
+  Bell,
+  Mail,
+  Globe,
+  Search,
+  Plus,
+  Edit,
+  Trash,
+  Eye,
+  Download,
+  Upload,
+  ChevronDown,
+  ChevronRight,
+  Check,
+  X,
+  AlertCircle,
+  Info,
+  Loader
+} from 'lucide-react'
+
+export const iconMap: Record<string, React.ReactNode> = {
+  'layout-dashboard': <LayoutDashboard className="w-5 h-5" />,
+  'settings': <Settings className="w-5 h-5" />,
+  'users': <Users className="w-5 h-5" />,
+  'user': <User className="w-5 h-5" />,
+  'shield': <Shield className="w-5 h-5" />,
+  'lock': <Lock className="w-5 h-5" />,
+  'monitor': <Monitor className="w-5 h-5" />,
+  'file-text': <FileText className="w-5 h-5" />,
+  'file': <File className="w-5 h-5" />,
+  'table': <Table className="w-5 h-5" />,
+  'database': <Database className="w-5 h-5" />,
+  'bar-chart': <BarChart className="w-5 h-5" />,
+  'menu': <Menu className="w-5 h-5" />,
+  'bell': <Bell className="w-5 h-5" />,
+  'mail': <Mail className="w-5 h-5" />,
+  'globe': <Globe className="w-5 h-5" />,
+  'search': <Search className="w-5 h-5" />,
+  'plus': <Plus className="w-5 h-5" />,
+  'edit': <Edit className="w-5 h-5" />,
+  'trash': <Trash className="w-5 h-5" />,
+  'eye': <Eye className="w-5 h-5" />,
+  'download': <Download className="w-5 h-5" />,
+  'upload': <Upload className="w-5 h-5" />,
+  'home': <Home className="w-5 h-5" />,
+  'chevron-down': <ChevronDown className="w-5 h-5" />,
+  'chevron-right': <ChevronRight className="w-5 h-5" />,
+  'check': <Check className="w-5 h-5" />,
+  'x': <X className="w-5 h-5" />,
+  'alert-circle': <AlertCircle className="w-5 h-5" />,
+  'info': <Info className="w-5 h-5" />,
+  'loader': <Loader className="w-5 h-5" />,
+}
+
+export const getIcon = (iconName: string | null | undefined, defaultIcon: string = 'menu'): React.ReactNode => {
+  if (!iconName) return iconMap[defaultIcon] || <Menu className="w-5 h-5" />
+  return iconMap[iconName] || iconMap[defaultIcon] || <Menu className="w-5 h-5" />
+}
