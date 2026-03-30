@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Pencil, Trash2, Plus, X, Check, AlertTriangle } from 'lucide-react'
+import { Pencil, Trash2, Plus, X, Check, AlertTriangle, ArrowUp, ArrowDown } from 'lucide-react'
 
 interface Role {
   id_role: number
@@ -93,6 +93,9 @@ export default function RolesPage() {
   const [showErrorModal, setShowErrorModal] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
+  const [sortField, setSortField] = useState<keyof Role | null>(null)
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+
   useEffect(() => {
     const fetchRoles = async () => {
       const accessToken = getTokenFromStorage()
@@ -124,6 +127,24 @@ export default function RolesPage() {
 
     fetchRoles()
   }, [])
+  const handleSort = (field: keyof Role) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
+
+  const sortedRoles = [...roles].sort((a, b) => {
+    if (!sortField) return 0
+    const aValue = a[sortField]
+    const bValue = b[sortField]
+    if (aValue === null || aValue === undefined) return 1
+    if (bValue === null || bValue === undefined) return -1
+    const comparison = String(aValue).localeCompare(String(bValue))
+    return sortDirection === 'asc' ? comparison : -comparison
+  })
 
   const handleEdit = (role: Role) => {
     setSelectedRole(role)
@@ -311,15 +332,47 @@ export default function RolesPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-secondary border-b border-border">
-                <th className="px-4 py-3 text-sm font-medium text-left">Nombre</th>
-                <th className="px-4 py-3 text-sm font-medium text-left">Descripción</th>
-                <th className="px-4 py-3 text-sm font-medium text-center">Fecha Creación</th>
-                <th className="px-4 py-3 text-sm font-medium text-center">Fecha Actualización</th>
+                <th 
+                  className="px-4 py-3 text-sm font-medium text-left cursor-pointer hover:bg-secondary/50"
+                  onClick={() => handleSort('name')}
+                >
+                  <div className="flex items-center gap-1">
+                    Nombre
+                    {sortField === 'name' && (sortDirection === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />)}
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-sm font-medium text-left cursor-pointer hover:bg-secondary/50"
+                  onClick={() => handleSort('description')}
+                >
+                  <div className="flex items-center gap-1">
+                    Descripción
+                    {sortField === 'description' && (sortDirection === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />)}
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-sm font-medium text-center cursor-pointer hover:bg-secondary/50"
+                  onClick={() => handleSort('created_at')}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    Fecha Creación
+                    {sortField === 'created_at' && (sortDirection === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />)}
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-sm font-medium text-center cursor-pointer hover:bg-secondary/50"
+                  onClick={() => handleSort('updated_at')}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    Fecha Actualización
+                    {sortField === 'updated_at' && (sortDirection === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />)}
+                  </div>
+                </th>
                 <th className="px-4 py-3 text-sm font-medium text-left">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {roles.map((role, index) => (
+              {sortedRoles.map((role, index) => (
                 <tr 
                   key={role.id_role} 
                   className={`border-b border-border ${index % 2 === 0 ? 'bg-secondary/30' : 'bg-background'}`}
