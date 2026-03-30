@@ -95,38 +95,45 @@ export default function RolesPage() {
 
   const [sortField, setSortField] = useState<keyof Role | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
+  const [total, setTotal] = useState(0)
+  const pageSize = parseInt(process.env.NEXT_PUBLIC_PAGE_SIZE || '10')
 
-  useEffect(() => {
-    const fetchRoles = async () => {
-      const accessToken = getTokenFromStorage()
-      if (!accessToken) {
-        setIsLoading(false)
-        return
-      }
-
-      try {
-        const res = await fetch('http://localhost:3000/roles', {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          }
-        })
-
-        if (!res.ok) {
-          throw new Error('Error al cargar los roles')
-        }
-
-        const data = await res.json()
-        setRoles(data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error desconocido')
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchRoles = async (page: number = 1) => {
+    const accessToken = getTokenFromStorage()
+    if (!accessToken) {
+      setIsLoading(false)
+      return
     }
 
-    fetchRoles()
-  }, [])
+    try {
+      const res = await fetch(`http://localhost:3000/roles?page=${page}&limit=${pageSize}`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        }
+      })
+
+      if (!res.ok) {
+        throw new Error('Error al cargar los roles')
+      }
+
+      const data = await res.json()
+      setRoles(data.data)
+      setTotal(data.total)
+      setTotalPages(data.totalPages)
+      setCurrentPage(data.page)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error desconocido')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchRoles(1)
+  }, [pageSize])
   const handleSort = (field: keyof Role) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
@@ -145,6 +152,12 @@ export default function RolesPage() {
     const comparison = String(aValue).localeCompare(String(bValue))
     return sortDirection === 'asc' ? comparison : -comparison
   })
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      fetchRoles(newPage)
+    }
+  }
 
   const handleEdit = (role: Role) => {
     setSelectedRole(role)
@@ -181,7 +194,15 @@ export default function RolesPage() {
       })
       
       if (res.ok) {
-        setRoles(roles.filter(r => r.id_role !== roleToDelete.id_role))
+        const newTotal = total - 1
+        setTotal(newTotal)
+        const newTotalPages = Math.ceil(newTotal / pageSize)
+        setTotalPages(newTotalPages)
+        let newPage = currentPage
+        if (currentPage > newTotalPages && newTotalPages > 0) {
+          newPage = newTotalPages
+        }
+        fetchRoles(newPage)
         setSuccessMessage('Rol eliminado correctamente')
         setShowSuccessModal(true)
       } else {
@@ -292,7 +313,7 @@ export default function RolesPage() {
         }
         
         const newRole = await res.json()
-        setRoles([...roles, newRole])
+        fetchRoles(1)
         setSuccessMessage('Rol agregado correctamente')
         setShowSuccessModal(true)
       }
@@ -404,7 +425,32 @@ export default function RolesPage() {
         </div>
       </div>
 
-      <div className="flex justify-end mt-4">
+      <div className="flex items-center justify-between mt-4">
+        <span className="text-sm text-muted-foreground">
+          Mostrando {roles.length} de {total} registros
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-3 py-1.5 text-sm bg-secondary rounded-lg hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Anterior
+          </button>
+          <span className="px-3 py-1.5 text-sm">
+            Página {currentPage} de {totalPages}
+          </span>
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages || totalPages === 0}
+            className="px-3 py-1.5 text-sm bg-secondary rounded-lg hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+
+      <div className="flex justify-start mt-4">
         <button
           onClick={handleAddRole}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
@@ -597,6 +643,7 @@ export default function RolesPage() {
           </div>
         </div>
       )}
+
     </div>
   )
 }
