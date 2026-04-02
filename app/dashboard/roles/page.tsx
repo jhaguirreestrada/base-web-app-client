@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Pencil, Trash2, Plus, X, Check, AlertTriangle, ArrowUp, ArrowDown } from 'lucide-react'
+import ServerError from '@/components/ui/ServerError'
 
 interface Role {
   id_role: number
@@ -99,6 +100,19 @@ export default function RolesPage() {
   const [totalPages, setTotalPages] = useState(0)
   const [total, setTotal] = useState(0)
   const pageSize = parseInt(process.env.NEXT_PUBLIC_PAGE_SIZE || '10')
+  const [visiblePages, setVisiblePages] = useState<number[]>([1, 2, 3, 4, 5])
+
+  const calculateVisiblePages = (current: number, total: number): number[] => {
+    const pagesToShow = 5
+    let start = Math.max(1, current - Math.floor(pagesToShow / 2))
+    let end = Math.min(total, start + pagesToShow - 1)
+    
+    if (end - start + 1 < pagesToShow) {
+      start = Math.max(1, end - pagesToShow + 1)
+    }
+    
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i)
+  }
 
   const fetchRoles = async (page: number = 1) => {
     const accessToken = getTokenFromStorage()
@@ -124,6 +138,7 @@ export default function RolesPage() {
       setTotal(data.total)
       setTotalPages(data.totalPages)
       setCurrentPage(data.page)
+      setVisiblePages(calculateVisiblePages(data.page, data.totalPages))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido')
     } finally {
@@ -156,6 +171,33 @@ export default function RolesPage() {
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
       fetchRoles(newPage)
+      setVisiblePages(calculateVisiblePages(newPage, totalPages))
+    }
+  }
+
+  const handleFirstPage = () => {
+    fetchRoles(1)
+    setVisiblePages(calculateVisiblePages(1, totalPages))
+  }
+
+  const handleLastPage = () => {
+    fetchRoles(totalPages)
+    setVisiblePages(calculateVisiblePages(totalPages, totalPages))
+  }
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      const newPage = currentPage - 1
+      fetchRoles(newPage)
+      setVisiblePages(calculateVisiblePages(newPage, totalPages))
+    }
+  }
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      const newPage = currentPage + 1
+      fetchRoles(newPage)
+      setVisiblePages(calculateVisiblePages(newPage, totalPages))
     }
   }
 
@@ -336,9 +378,7 @@ export default function RolesPage() {
   }
 
   if (error) {
-    return (
-      <div className="text-red-500 p-4">Error: {error}</div>
-    )
+    return <ServerError message={error} onRetry={() => fetchRoles(1)} showBackButton={false} />
   }
 
   return (
@@ -425,27 +465,49 @@ export default function RolesPage() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between mt-4">
+       <div className="flex items-center justify-between mt-4">
         <span className="text-sm text-muted-foreground">
           Mostrando {roles.length} de {total} registros
         </span>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <button
-            onClick={() => handlePageChange(currentPage - 1)}
+            onClick={handleFirstPage}
             disabled={currentPage === 1}
-            className="px-3 py-1.5 text-sm bg-secondary rounded-lg hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-8 h-8 border border-border flex items-center justify-center text-sm hover:bg-secondary hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
           >
-            Anterior
+            «
           </button>
-          <span className="px-3 py-1.5 text-sm">
-            Página {currentPage} de {totalPages}
-          </span>
           <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages || totalPages === 0}
-            className="px-3 py-1.5 text-sm bg-secondary rounded-lg hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handlePrevPage}
+            disabled={currentPage === 1}
+            className="w-8 h-8 border border-border flex items-center justify-center text-sm hover:bg-secondary hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
           >
-            Siguiente
+            ‹
+          </button>
+          {visiblePages.map(page => (
+            <button
+              key={page}
+              onClick={() => handlePageChange(page)}
+              className={`w-8 h-8 border border-border flex items-center justify-center text-sm hover:bg-secondary hover:text-foreground transition-colors ${
+                currentPage === page ? 'bg-secondary font-bold' : ''
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+          <button
+            onClick={handleNextPage}
+            disabled={currentPage >= totalPages}
+            className="w-8 h-8 border border-border flex items-center justify-center text-sm hover:bg-secondary hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+          >
+            ›
+          </button>
+          <button
+            onClick={handleLastPage}
+            disabled={currentPage === totalPages || totalPages === 0}
+            className="w-8 h-8 border border-border flex items-center justify-center text-sm hover:bg-secondary hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+          >
+            »
           </button>
         </div>
       </div>
