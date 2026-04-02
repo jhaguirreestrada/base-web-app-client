@@ -10,9 +10,10 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showNoMenusModal, setShowNoMenusModal] = useState(false)
+  const [showErrorModal, setShowErrorModal] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -56,7 +57,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
+    setShowErrorModal(false)
     setIsLoading(true)
 
     try {
@@ -71,14 +72,39 @@ export default function LoginPage() {
 
       if (!response.ok) {
         const data = await response.json()
-        setError(data.message || 'Credenciales inválidas')
+        setErrorMessage(data.message || 'Credenciales inválidas')
+        setShowErrorModal(true)
         setIsLoading(false)
         return
       }
 
       const data = await response.json()
+
+      const userState = data.user?.state
+      const passwordExpiry = data.user?.password_expiry_date
+
+      if (userState !== 'A' && userState !== 'F') {
+        setErrorMessage(data.message || 'Usuario inactivo o eliminado')
+        setShowErrorModal(true)
+        setIsLoading(false)
+        return
+      }
+
       localStorage.setItem('auth_token', data.access_token)
       localStorage.setItem('auth_user', JSON.stringify(data.user))
+
+      if (userState === 'F') {
+        router.push('/change-password')
+        return
+      }
+
+      if (userState === 'A' && passwordExpiry) {
+        const expiryDate = new Date(passwordExpiry)
+        if (expiryDate < new Date()) {
+          router.push('/change-password')
+          return
+        }
+      }
 
       const hasMenus = await checkMenusAndRedirect(data.access_token, data.user)
       
@@ -87,7 +113,8 @@ export default function LoginPage() {
         router.refresh()
       }
     } catch {
-      setError('Error al conectar con el servidor')
+      setErrorMessage('Error al conectar con el servidor')
+      setShowErrorModal(true)
     } finally {
       setIsLoading(false)
     }
@@ -118,12 +145,6 @@ export default function LoginPage() {
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-8 shadow-2xl">
-          {error && (
-            <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm">
-              {error}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="space-y-5 pt-2">
             <div>
               <label className="block text-sm font-medium mb-2">Usuario</label>
@@ -195,6 +216,30 @@ export default function LoginPage() {
             </p>
             <button
               onClick={handleLogout}
+              className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+            >
+              Aceptar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showErrorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-card border border-border rounded-2xl p-8 max-w-md mx-4 shadow-2xl">
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center">
+                <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
+              </div>
+            </div>
+            <h2 className="text-xl font-bold text-center text-foreground mb-4">
+              Error de autenticación
+            </h2>
+            <p className="text-center text-muted-foreground mb-6">
+              {errorMessage}
+            </p>
+            <button
+              onClick={() => setShowErrorModal(false)}
               className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
             >
               Aceptar
