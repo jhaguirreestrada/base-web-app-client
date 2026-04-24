@@ -22,7 +22,10 @@ export async function POST(request: Request) {
     if (!response.ok) {
       const error = await response.json().catch(() => ({}))
       return NextResponse.json(
-        { message: error.message || 'Credenciales inválidas' },
+        { 
+          codeError: error.codeError || 1,
+          message: error.message || 'Credenciales inválidas'
+        },
         { status: response.status }
       )
     }

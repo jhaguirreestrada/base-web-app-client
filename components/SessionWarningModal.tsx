@@ -32,12 +32,13 @@ export function SessionWarningModal({
             Sesión por expirar
           </h2>
           
-          <p className="text-muted-foreground mb-6">
-            Tu sesión expirará en{' '}
-            <span className="font-bold text-amber-600 dark:text-amber-400">
-              {remainingTime} segundos
-            </span>
+          <p className="text-muted-foreground mb-2">
+            Tu sesión expirará en 60 segundos
           </p>
+
+          <div className="text-7xl font-bold text-amber-600 dark:text-amber-400 mb-6">
+            {remainingTime}
+          </div>
 
           <div className="divider my-6" />
 

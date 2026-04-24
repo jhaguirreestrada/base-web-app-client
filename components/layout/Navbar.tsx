@@ -45,6 +45,18 @@ export function Navbar({ onMenuClick, onToggleSidebar, sidebarCollapsed = false 
   const [messages, setMessages] = useState<Message[]>([
     { id: 1, role: 'assistant', content: '¡Hola! Soy tu asistente de IA. ¿En qué puedo ayudarte hoy?' }
   ])
+  const [userData, setUserData] = useState<{ username: string; name?: string; lastname?: string; lastName?: string; last_name?: string } | null>(null)
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('auth_user')
+    if (storedUser) {
+      try {
+        setUserData(JSON.parse(storedUser))
+      } catch {
+        setUserData(null)
+      }
+    }
+  }, [])
   
   const createMenuRef = useRef<HTMLDivElement>(null)
   const notificationsRef = useRef<HTMLDivElement>(null)
@@ -109,6 +121,7 @@ export function Navbar({ onMenuClick, onToggleSidebar, sidebarCollapsed = false 
   }
 
   const handleLogout = async () => {
+    sessionStorage.setItem('reset_login_modals', 'true')
     try {
       await fetch('/api/auth/logout', {
         method: 'POST',
@@ -117,6 +130,33 @@ export function Navbar({ onMenuClick, onToggleSidebar, sidebarCollapsed = false 
       console.error('Logout error:', error)
     }
     window.location.href = '/login'
+  }
+
+  const getInitials = () => {
+    if (!userData) return '??'
+    const name = userData.name || ''
+    const lastname = userData.lastname || userData.lastName || userData.last_name || ''
+    if (name && lastname) {
+      return `${name.charAt(0)}${lastname.charAt(0)}`.toUpperCase()
+    }
+    if (name) {
+      return name.charAt(0).toUpperCase()
+    }
+    if (userData.username) {
+      return userData.username.substring(0, 2).toUpperCase()
+    }
+    return '??'
+  }
+
+  const getDisplayName = () => {
+    if (!userData) return ''
+    const name = userData.name || ''
+    const lastname = userData.lastname || userData.lastName || userData.last_name || ''
+    if (name && lastname) {
+      return `${name} ${lastname}`
+    }
+    if (name) return name
+    return userData.username || ''
   }
 
   return (
@@ -247,9 +287,9 @@ export function Navbar({ onMenuClick, onToggleSidebar, sidebarCollapsed = false 
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-accent transition-colors"
               >
                 <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
-                  <span className="text-sm font-medium">HK</span>
+                  <span className="text-sm font-medium">{getInitials()}</span>
                 </div>
-                <span className="hidden md:block text-sm font-medium">Henry Klein</span>
+                <span className="hidden md:block text-sm font-medium">{getDisplayName()}</span>
                 <ChevronDown className="w-4 h-4" />
               </button>
               
@@ -269,7 +309,7 @@ export function Navbar({ onMenuClick, onToggleSidebar, sidebarCollapsed = false 
                     <span className="text-sm">Asistente virtual</span>
                   </button>
                   <Link 
-                    href="#" 
+                    href="/dashboard/change-password" 
                     onClick={(e) => e.stopPropagation()}
                     className="flex items-center gap-3 px-4 py-2 hover:bg-accent transition-colors"
                   >

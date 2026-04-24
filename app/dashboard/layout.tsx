@@ -57,6 +57,7 @@ export default function DashboardLayout({
   }, [router])
 
   const handleLogout = useCallback(async () => {
+    sessionStorage.setItem('reset_login_modals', 'true')
     localStorage.removeItem('auth_token')
     localStorage.removeItem('auth_user')
     try {
