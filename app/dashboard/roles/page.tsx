@@ -101,8 +101,9 @@ export default function RolesPage() {
   const [total, setTotal] = useState(0)
   const pageSize = parseInt(process.env.NEXT_PUBLIC_PAGE_SIZE || '10')
   const [visiblePages, setVisiblePages] = useState<number[]>([1, 2, 3, 4, 5])
+  const [showDotsAfter, setShowDotsAfter] = useState(false)
 
-  const calculateVisiblePages = (current: number, total: number): number[] => {
+  const calculateVisiblePages = (current: number, total: number): { pages: number[]; showDots: boolean } => {
     const pagesToShow = 5
     let start = Math.max(1, current - Math.floor(pagesToShow / 2))
     let end = Math.min(total, start + pagesToShow - 1)
@@ -111,7 +112,10 @@ export default function RolesPage() {
       start = Math.max(1, end - pagesToShow + 1)
     }
     
-    return Array.from({ length: end - start + 1 }, (_, i) => start + i)
+    const pages = Array.from({ length: end - start + 1 }, (_, i) => start + i)
+    const showDots = end < total
+    
+    return { pages, showDots }
   }
 
   const fetchRoles = async (page: number = 1) => {
@@ -138,7 +142,9 @@ export default function RolesPage() {
       setTotal(data.total)
       setTotalPages(data.totalPages)
       setCurrentPage(data.page)
-      setVisiblePages(calculateVisiblePages(data.page, data.totalPages))
+      const { pages, showDots } = calculateVisiblePages(data.page, data.totalPages)
+      setVisiblePages(pages)
+      setShowDotsAfter(showDots)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido')
     } finally {
@@ -171,25 +177,33 @@ export default function RolesPage() {
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
       fetchRoles(newPage)
-      setVisiblePages(calculateVisiblePages(newPage, totalPages))
+      const { pages, showDots } = calculateVisiblePages(newPage, totalPages)
+      setVisiblePages(pages)
+      setShowDotsAfter(showDots)
     }
   }
 
   const handleFirstPage = () => {
     fetchRoles(1)
-    setVisiblePages(calculateVisiblePages(1, totalPages))
+    const { pages, showDots } = calculateVisiblePages(1, totalPages)
+    setVisiblePages(pages)
+    setShowDotsAfter(showDots)
   }
 
   const handleLastPage = () => {
     fetchRoles(totalPages)
-    setVisiblePages(calculateVisiblePages(totalPages, totalPages))
+    const { pages, showDots } = calculateVisiblePages(totalPages, totalPages)
+    setVisiblePages(pages)
+    setShowDotsAfter(showDots)
   }
 
   const handlePrevPage = () => {
     if (currentPage > 1) {
       const newPage = currentPage - 1
       fetchRoles(newPage)
-      setVisiblePages(calculateVisiblePages(newPage, totalPages))
+      const { pages, showDots } = calculateVisiblePages(newPage, totalPages)
+      setVisiblePages(pages)
+      setShowDotsAfter(showDots)
     }
   }
 
@@ -197,7 +211,9 @@ export default function RolesPage() {
     if (currentPage < totalPages) {
       const newPage = currentPage + 1
       fetchRoles(newPage)
-      setVisiblePages(calculateVisiblePages(newPage, totalPages))
+      const { pages, showDots } = calculateVisiblePages(newPage, totalPages)
+      setVisiblePages(pages)
+      setShowDotsAfter(showDots)
     }
   }
 
@@ -495,6 +511,11 @@ export default function RolesPage() {
               {page}
             </button>
           ))}
+          {showDotsAfter && (
+            <span className="w-8 h-8 flex items-center justify-center text-sm text-muted-foreground">
+              ...
+            </span>
+          )}
           <button
             onClick={handleNextPage}
             disabled={currentPage >= totalPages}
